@@ -34,7 +34,13 @@ functions:
   wagtail:
     environment: 
       # On Lambda, only /tmp is writable
-      DATABASE_URL: sqlite:////tmp/wagtail-env.sqlite
+      #DATABASE_URL: sqlite:////tmp/wagtail-env.sqlite
+      # TODO make these vars parameters or refs to DB outputs
+      # Endpoint is the hostname like:
+      # wagtaillambda.cluster-caoirfmotyxq.eu-west-3.rds.amazonaws.com
+      ## Template error: 
+      ## variable Database.Endpoint in Fn::Sub expression does not resolve to a string
+      DATABASE_URL: !Sub "postgres://wagtail:ChangeMe@${Database.Endpoint.Address}:5432/wagtaillambda"
     image:
       name: wagtaillambda
     url: true                   # create a Lambda Function URL 
@@ -151,4 +157,4 @@ resources:
           SecondsUntilAutoPause: 300
         VpcSecurityGroupIds:
           - !Ref SecurityGroupDb
-
+  
