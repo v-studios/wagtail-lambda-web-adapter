@@ -58,7 +58,7 @@ if bucket_name:
 if not os.environ.get("DATABASE_URL"):
     print(f"#### WARNING: no DATABASE_URL environment var")
     os.environ["DATABASE_URL"] = "sqlite:////tmp/default.sqlite3"
-print(f"#### DEV.PY DB using {database_url=}")
+print(f"#### DEV.PY DB using {os.environ['DATABASE_URL']=}")
 DATABASES['default'] = dj_database_url.config(conn_max_age=600)
 print(f"#### DEV.PY DB {DATABASES=}")
 

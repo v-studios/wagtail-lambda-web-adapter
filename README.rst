@@ -1,5 +1,5 @@
 ====================================
- Wagtain on Lambda with Web Adapter
+ Wagtail on Lambda with Web Adapter
 ====================================
 
 The AWS Lambda Web Adapter promises to allow conventional HTTP-request
