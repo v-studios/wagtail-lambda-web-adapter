@@ -34,12 +34,18 @@ functions:
   wagtail:
     environment: 
       # On Lambda, only /tmp is writable
-      DATABASE_URL: sqlite:////tmp/wagtail-env.sqlite
+      #DATABASE_URL: sqlite:////tmp/wagtail-env.sqlite
+      # TODO make these vars parameters or refs to DB outputs
+      # Endpoint is the hostname like:
+      # wagtaillambda.cluster-caoirfmotyxq.eu-west-3.rds.amazonaws.com
+      ## Template error: 
+      ## variable Database.Endpoint in Fn::Sub expression does not resolve to a string
+      DATABASE_URL: !Sub "postgres://wagtail:ChangeMe@${Database.Endpoint.Address}:5432/wagtaillambda"
     image:
       name: wagtaillambda
     url: true                   # create a Lambda Function URL 
 
-# VPC, ...
+# VPC, Aurora Serverless v1 DB,...
 
 resources:
   Resources:
@@ -125,3 +131,30 @@ resources:
             ToPort: 5432
         VpcId: !Ref VPC
 
+    DBSubnetGroup:
+      Type: AWS::RDS::DBSubnetGroup
+      Properties:
+        DBSubnetGroupDescription: Subnet for Database
+        DBSubnetGroupName: !Sub "${AWS::StackName}-db-subnet-group"
+        SubnetIds:
+          - !Ref PublicSubnet1
+          - !Ref PublicSubnet2
+    Database:
+      Type: AWS::RDS::DBCluster
+      Properties:
+        Engine: aurora-postgresql
+        EngineMode: serverless             # only use Serverless v1 at this time
+        EngineVersion: 13.9                # Django 4.1+ requires PSQL 12+; Serverless v1 only up to 13.9
+        DatabaseName:        wagtaillambda
+        DBClusterIdentifier: wagtaillambda
+        DBSubnetGroupName:   !Ref DBSubnetGroup
+        MasterUsername:      wagtail
+        MasterUserPassword:  ChangeMe
+        ScalingConfiguration:
+          AutoPause: true
+          MaxCapacity: 4
+          MinCapacity: 2          # minimum for Serverless v1
+          SecondsUntilAutoPause: 300
+        VpcSecurityGroupIds:
+          - !Ref SecurityGroupDb
+  
