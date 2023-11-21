@@ -1,0 +1,25 @@
+# May want a Lambda that JUST does migrations, collectstatic, using same image
+
+service: wagtail
+
+provider:
+  name: aws
+  region: eu-west-3
+  memorySize: 2048 # optional, in MB, default is 1024
+  timeout: 30 # Django database migration may take > 6 seconds
+  ecr:
+    images:
+      wagtaillambda:
+        path: ./
+        platform: linux/amd64   # my Mac M1 builds ARM by default, Lambda needs AMD
+
+# increase memory, time
+
+functions:
+  wagtail:
+    environment: 
+      # On Lambda, only /tmp is writable
+      DATABASE_URL: sqlite:////tmp/wagtail-env.sqlite
+    image:
+      name: wagtaillambda
+    url: true                   # create a Lambda Function URL 
