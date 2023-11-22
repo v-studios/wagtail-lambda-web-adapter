@@ -23,9 +23,8 @@ CSRF_TRUSTED_ORIGINS=[
 ]
 
 bucket_name = os.environ.get("AWS_STORAGE_BUCKET_NAME")
-print(f"#### DEV.PY STORAGES: {bucket_name=}")
 if bucket_name:
-    print(f"#### DEV.PY STORAGES configuring STORAGES for S3...")
+    print(f"#### DEV.PY STORAGES configuring STORAGES for S3 {bucket_name=}")
     INSTALLED_APPS.append("storages")  # media/ and static/ in S3
     del STATICFILES_STORAGE            # conflicts with STORAGES
     STORAGES = {
@@ -34,16 +33,16 @@ if bucket_name:
             "OPTIONS": {
                 "bucket_name": bucket_name,
                 # Default behavior uses non-public objects with Presigned URLs.
-                #"default_acl": "public-read",
-                #"querystring_auth": False,
+                "default_acl": "public-read",
+                "querystring_auth": False,
             },
         },
         "staticfiles": {
             "BACKEND": "storages.backends.s3.S3Storage",
             "OPTIONS": {
                 "bucket_name": bucket_name,
-                #"default_acl": "public-read",
-                #"querystring_auth": False,
+                "default_acl": "public-read",
+                "querystring_auth": False,
             },
     },
 }
@@ -58,7 +57,6 @@ if bucket_name:
 if not os.environ.get("DATABASE_URL"):
     print(f"#### WARNING: no DATABASE_URL environment var")
     os.environ["DATABASE_URL"] = "sqlite:////tmp/default.sqlite3"
-print(f"#### DEV.PY DB using {os.environ['DATABASE_URL']=}")
 DATABASES['default'] = dj_database_url.config(conn_max_age=600)
 print(f"#### DEV.PY DB {DATABASES=}")
 

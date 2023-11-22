@@ -3,10 +3,12 @@
 service: wagtail
 
 provider:
+  #runtime: python3.11           # DO PER FUNCTION
   name: aws
   region: eu-west-3
   memorySize: 2048 # optional, in MB, default is 1024
-  timeout: 30 # Django database migration may take > 6 seconds
+  #timeout: 30 # Django database migration may take > 6 seconds
+  timeout: 60 # Janitor collect static (or are we hanging on S3 perms)
   ecr:
     images:
       wagtaillambda:
@@ -25,6 +27,15 @@ provider:
             - 's3:PutObjectAcl*' # TODO trying to make upload form AJAX POST work
             - 's3:*'             # TODO remove me
           Resource: !Sub ${S3Media.Arn}
+        - Effect: Allow
+          Action:
+            - 's3:*'             # TODO remove me
+          Resource: !Sub ${S3Media.Arn}/
+        - Effect: Allow
+          Action:
+            - 's3:*'             # TODO remove me
+          Resource: "*"
+
   # Put Lambda in the VPC with needed for Aurora;
   # TODO can we use a VPC Endpoint instead?
   vpc:
@@ -35,17 +46,32 @@ provider:
       - !Ref PublicSubnet2
 
 functions:
+  s3check:
+    environment: 
+      AWS_STORAGE_BUCKET_NAME: !Ref S3Media # Bucket name, not DNS
+    handler:
+      s3check.handler
+    runtime: python3.11
+
   wagtail:
     environment: 
       # TODO make these vars parameters or refs to DB outputs
       DATABASE_URL: !Sub "postgres://wagtail:ChangeMe@${Database.Endpoint.Address}:${Database.Endpoint.Port}/wagtaillambda"
       # On Lambda, only /tmp is writable
       # DATABASE_URL: sqlite:////tmp/wagtail-env.sqlite
-      AWS_STORAGE_BUCKET_NAME: !Sub ${S3Media.DomainName}
-      #AWS_STORAGE_BUCKET_NAME: !Sub ${S3Media.RegionalDomainName}
+      AWS_STORAGE_BUCKET_NAME: !Ref S3Media # Bucket name, not DNS
     image:
       name: wagtaillambda
     url: true                   # create a Lambda Function URL 
+
+  wagtailjanitor:
+    environment: 
+      DATABASE_URL: !Sub "postgres://wagtail:ChangeMe@${Database.Endpoint.Address}:${Database.Endpoint.Port}/wagtaillambda"
+      AWS_STORAGE_BUCKET_NAME: !Ref S3Media
+      WAGTAIL_JANITOR: migrate and collect static
+    image:
+      name: wagtaillambda
+    url: false                   # run from CLI or web console, not API
 
 # VPC, Aurora Serverless v1 DB, S3 Media 
 
@@ -160,6 +186,7 @@ resources:
         VpcSecurityGroupIds:
           - !Ref SecurityGroupDb
   
+
     S3Media:
       Type: AWS::S3::Bucket
       # DeletionPolicy: Retain
@@ -185,4 +212,14 @@ resources:
         #       NoncurrentVersionExpirationInDays: 100
         # VersioningConfiguration:
         #   Status: Enabled
+    # Serverless created VPCEndpoint type=Interface: wagtail-dev but
+    # we need this VPCE type=Gateway so Lambda in VPC can reach S3.
+    S3VpcEndpoint:
+      Type: AWS::EC2::VPCEndpoint
+      Properties:
+        RouteTableIds:
+          - !Ref PublicRouteTable
+        ServiceName: com.amazonaws.${self:provider.region}.s3
+        VpcId: !Ref VPC
+        
 
