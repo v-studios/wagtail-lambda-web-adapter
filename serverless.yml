@@ -158,3 +158,28 @@ resources:
         VpcSecurityGroupIds:
           - !Ref SecurityGroupDb
   
+    S3Media:
+      Type: AWS::S3::Bucket
+      # DeletionPolicy: Retain
+      # UpdateReplacePolicy: Retain
+      Properties:
+        # BucketName generated like: wagtail-dev-s3media-12vbehqv6osgh
+        CorsConfiguration:
+          CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [GET]
+            AllowedOrigins: ['*']
+            ExposedHeaders: [Date]
+            MaxAge: '300'
+        PublicAccessBlockConfiguration: # needed to set acl=public-read
+          BlockPublicAcls: false
+        OwnershipControls:        # needed if we want to set acl=public-read
+          Rules:
+            - ObjectOwnership: ObjectWriter
+        # LifecycleConfiguration:
+        #   Rules:
+        #     - Id: ExpireOldVersions
+        #       Status: Enabled
+        #       NoncurrentVersionExpirationInDays: 100
+        # VersioningConfiguration:
+        #   Status: Enabled
