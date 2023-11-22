@@ -27,5 +27,6 @@ COPY --from=install /app /app
 WORKDIR /app
 COPY dev.py   ./scale0/settings/
 COPY start.sh ./
+COPY s3check.py ./
 EXPOSE 8000
 CMD ./start.sh

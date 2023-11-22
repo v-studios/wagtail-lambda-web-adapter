@@ -22,10 +22,12 @@ CSRF_TRUSTED_ORIGINS=[
 
 ]
 
+print(f"#### DEV.py {MEDIA_ROOT=} {STATIC_ROOT=}")
+# MEDIA_ROOT='/app/media' STATIC_ROOT='/app/static'
+# TODO put media and static under separate prefixes, how?
 bucket_name = os.environ.get("AWS_STORAGE_BUCKET_NAME")
-print(f"#### DEV.PY STORAGES: {bucket_name=}")
 if bucket_name:
-    print(f"#### DEV.PY STORAGES configuring STORAGES for S3...")
+    print(f"#### DEV.PY STORAGES configuring STORAGES for S3 {bucket_name=}")
     INSTALLED_APPS.append("storages")  # media/ and static/ in S3
     del STATICFILES_STORAGE            # conflicts with STORAGES
     STORAGES = {
@@ -58,7 +60,6 @@ if bucket_name:
 if not os.environ.get("DATABASE_URL"):
     print(f"#### WARNING: no DATABASE_URL environment var")
     os.environ["DATABASE_URL"] = "sqlite:////tmp/default.sqlite3"
-print(f"#### DEV.PY DB using {os.environ['DATABASE_URL']=}")
 DATABASES['default'] = dj_database_url.config(conn_max_age=600)
 print(f"#### DEV.PY DB {DATABASES=}")
 
