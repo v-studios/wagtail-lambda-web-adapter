@@ -33,16 +33,16 @@ if bucket_name:
             "OPTIONS": {
                 "bucket_name": bucket_name,
                 # Default behavior uses non-public objects with Presigned URLs.
-                "default_acl": "public-read",
-                "querystring_auth": False,
+                #"default_acl": "public-read",
+                #"querystring_auth": False,
             },
         },
         "staticfiles": {
             "BACKEND": "storages.backends.s3.S3Storage",
             "OPTIONS": {
                 "bucket_name": bucket_name,
-                "default_acl": "public-read",
-                "querystring_auth": False,
+                #"default_acl": "public-read",
+                #"querystring_auth": False,
             },
     },
 }

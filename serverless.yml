@@ -6,7 +6,7 @@ provider:
   name: aws
   region: eu-west-3
   memorySize: 2048 # optional, in MB, default is 1024
-  timeout: 30 # Django database migration may take > 6 seconds
+  timeout: 60 # migration and collectstatic > 30 seconds, wake up DB 30-35 seconds
   ecr:
     images:
       wagtaillambda:
