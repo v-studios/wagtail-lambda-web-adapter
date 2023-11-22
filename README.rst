@@ -23,3 +23,6 @@ will get an empty DB and have to go through the slow-ish migrate
 stuff.
 
 We need to create an external DB, like Aurora Serverless v1.
+
+I wish I'd seen this before starting
+https://github.com/fun-with-serverless/serverless-django/
