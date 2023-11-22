@@ -15,6 +15,7 @@ RUN pip install wagtail==5.2.1
 RUN wagtail start scale0 .      # creates /app/scale0
 RUN pip install -r requirements.txt # created by "wagtail start"
 RUN pip install dj-database-url psycopg2-binary django-debug-toolbar django-storages boto3
+RUN pip install gunicorn
 
 FROM ${PYTHON} AS run
 COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.7.1 /lambda-adapter /opt/extensions/lambda-adapter
@@ -27,5 +28,6 @@ COPY --from=install /app /app
 WORKDIR /app
 COPY dev.py   ./scale0/settings/
 COPY start.sh ./
+COPY s3check.py ./
 EXPOSE 8000
 CMD ./start.sh
