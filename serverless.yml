@@ -12,15 +12,21 @@ provider:
       wagtaillambda:
         path: ./
         platform: linux/amd64   # my Mac M1 builds ARM by default,
-
-  # We need a VPC for Aurora.
-  # We'll put the Lambda in the VPC, but we might be able to use a VPC Endpoint instead.
-  # AWS:
-  #  Lambda needs AMD The VPC security groups and subnets that are
-  #  attached to a Lambda function. When you connect a function to a
-  #  VPC, Lambda creates an elastic network interface for each
-  #  combination of security group and subnet in the function's VPC
-  #  configuration.
+  # Let Lambda save media, statics to S3
+  iam:
+    role:
+      #name: whatever
+      #path: /                   # what's this?
+      statements:
+        - Effect: Allow
+          Action:
+            - 's3:Get*'       # media and assets
+            - 's3:PutObject*' # store uploaded media
+            - 's3:PutObjectAcl*' # TODO trying to make upload form AJAX POST work
+            - 's3:*'             # TODO remove me
+          Resource: !Sub ${S3Media.Arn}
+  # Put Lambda in the VPC with needed for Aurora;
+  # TODO can we use a VPC Endpoint instead?
   vpc:
     securityGroupIds:
       - !Ref SecurityGroupAppRunner
@@ -28,24 +34,20 @@ provider:
       - !Ref PublicSubnet1
       - !Ref PublicSubnet2
 
-# increase memory, time
-
 functions:
   wagtail:
     environment: 
-      # On Lambda, only /tmp is writable
-      #DATABASE_URL: sqlite:////tmp/wagtail-env.sqlite
       # TODO make these vars parameters or refs to DB outputs
-      # Endpoint is the hostname like:
-      # wagtaillambda.cluster-caoirfmotyxq.eu-west-3.rds.amazonaws.com
-      ## Template error: 
-      ## variable Database.Endpoint in Fn::Sub expression does not resolve to a string
-      DATABASE_URL: !Sub "postgres://wagtail:ChangeMe@${Database.Endpoint.Address}:5432/wagtaillambda"
+      DATABASE_URL: !Sub "postgres://wagtail:ChangeMe@${Database.Endpoint.Address}:${Database.Endpoint.Port}/wagtaillambda"
+      # On Lambda, only /tmp is writable
+      # DATABASE_URL: sqlite:////tmp/wagtail-env.sqlite
+      AWS_STORAGE_BUCKET_NAME: !Sub ${S3Media.DomainName}
+      #AWS_STORAGE_BUCKET_NAME: !Sub ${S3Media.RegionalDomainName}
     image:
       name: wagtaillambda
     url: true                   # create a Lambda Function URL 
 
-# VPC, Aurora Serverless v1 DB,...
+# VPC, Aurora Serverless v1 DB, S3 Media 
 
 resources:
   Resources:
@@ -183,3 +185,4 @@ resources:
         #       NoncurrentVersionExpirationInDays: 100
         # VersioningConfiguration:
         #   Status: Enabled
+
