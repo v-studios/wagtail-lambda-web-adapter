@@ -12,7 +12,11 @@ def handler(event, context):
     http_code = res['ResponseMetadata']['HTTPStatusCode']
     print (f"{http_code=}")
     if http_code == 200:
-        print(f"{res['Contents'][:1]=}")
+        contents = res['Contents']
+        if contents:
+            print(f"{contents[:1]=}")
+        else:
+            print(f"Access ok but no contents yet")
 
 
 if __name__ == "__main__":

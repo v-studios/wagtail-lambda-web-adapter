@@ -22,6 +22,9 @@ CSRF_TRUSTED_ORIGINS=[
 
 ]
 
+print(f"#### DEV.py {MEDIA_ROOT=} {STATIC_ROOT=}")
+# MEDIA_ROOT='/app/media' STATIC_ROOT='/app/static'
+# TODO put media and static under separate prefixes, how?
 bucket_name = os.environ.get("AWS_STORAGE_BUCKET_NAME")
 if bucket_name:
     print(f"#### DEV.PY STORAGES configuring STORAGES for S3 {bucket_name=}")
