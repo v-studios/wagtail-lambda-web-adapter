@@ -19,5 +19,10 @@ else
     echo "## ${0} Collect Static..."
     # --clear flag throws error
     ./manage.py collectstatic --noinput -v 3
+    err=$?
+    if [ $err -ne 0 ]
+    then
+        echo "## ${0} Collect Static Error: ${err}"
+        exit $err
+    fi
 fi
-
