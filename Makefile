@@ -1,13 +1,13 @@
 # Create an ECR Repo (if it doesn't exist); build, tag, push the image.
-# Repo name must match that used by aws/apprunner.yml,
+# Repo name must match that used by the serverless.yml file.
 # our pattern is APP_NAME:OP_ENV (e.g., :dev, scale0:qa, scale0:prod)
 
-APP_NAME         := wagadapter
+APP_NAME         := wagtaillwa
 OP_ENV           ?= dev
 NAME_TAG         := ${APP_NAME}:${OP_ENV}
 IMAGE_LOCAL	 := ${NAME_TAG}
 AWS_REGION       := eu-west-3
-#AWS_ACCOUNT      := $(shell aws sts get-caller-identity --query Account --output text)
+AWS_ACCOUNT      := $(shell aws sts get-caller-identity --query Account --output text)
 ECR_REG          := ${AWS_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com
 ECR_REG_URL      := https://${ECR_REG}
 ECR_REG_REPO_TAG := ${ECR_REG}/${NAME_TAG}
