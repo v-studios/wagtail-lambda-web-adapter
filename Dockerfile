@@ -11,8 +11,8 @@ FROM ${PYTHON} AS install
 ENV PATH=/VENV/bin:${PATH}
 RUN python -m venv /VENV
 WORKDIR /app
-RUN pip install wagtail==5.2.1
-RUN wagtail start scale0 .      # creates /app/scale0
+RUN pip install wagtail==6.4.1
+RUN wagtail start wagtaillwa .      # creates /app/wagtaillwa
 RUN pip install -r requirements.txt # created by "wagtail start"
 RUN pip install dj-database-url psycopg2-binary django-debug-toolbar django-storages[s3] boto3
 RUN pip install gunicorn
@@ -25,9 +25,11 @@ ENV DATABASE_URL=${DATABASE_URL}
 ENV AWS_STORAGE_BUCKET_NAME=${AWS_STORAGE_BUCKET_NAME}
 COPY --from=install /VENV /VENV
 COPY --from=install /app /app
+
 WORKDIR /app
-COPY dev.py   ./scale0/settings/
 COPY start.sh ./
 COPY s3check.py ./
+COPY dev.py   ./wagtaillwa/settings/
+
 EXPOSE 8000
 CMD ./start.sh

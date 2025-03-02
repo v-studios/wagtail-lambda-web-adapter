@@ -6,7 +6,7 @@ if [ -z "${WAGTAIL_JANITOR}" ]
 then
     echo "## ${0} Run Server..."
     #./manage.py runserver 0.0.0.0:8000
-    gunicorn scale0.wsgi:application -w=1 -b=0.0.0.0:8000 # only 1 worker for Lambda
+    gunicorn wagtaillwa.wsgi:application -w=1 -b=0.0.0.0:8000 # only 1 worker for Lambda
 else
     ./s3check.py
 

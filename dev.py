@@ -29,12 +29,11 @@ bucket_name = os.environ.get("AWS_STORAGE_BUCKET_NAME")
 if bucket_name:
     print(f"#### DEV.PY STORAGES configuring STORAGES for S3 {bucket_name=}")
     INSTALLED_APPS.append("storages")  # media/ and static/ in S3
-    del STATICFILES_STORAGE            # conflicts with STORAGES
     STORAGES = {
         "default": {
             "BACKEND": "storages.backends.s3.S3Storage",
             "OPTIONS": {
-                "bucket_name": bucket_name,
+                "bucket_name": bucket_name,  # should be found from ENV var
                 # Default behavior uses non-public objects with Presigned URLs.
                 #"default_acl": "public-read",
                 #"querystring_auth": False,
