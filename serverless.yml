@@ -1,4 +1,4 @@
-service: wagtail
+service: wagtaillwa
 
 package:  # TODO package each function individually
   exclude:
@@ -19,7 +19,7 @@ provider:
   timeout: 60
   ecr:
     images:
-      wagtaillambda:
+      wagtaillwa:
         path: ./
         platform: linux/amd64   # my Mac M1 builds ARM by default,
   iam:
@@ -55,24 +55,22 @@ functions:
       AWS_STORAGE_BUCKET_NAME: !Ref S3Media # Bucket name, not DNS
     handler: s3check.handler
     runtime: python3.11
-
-  # Docs suggest we connect to the DB Cluster endpoint, not the Instance. The
-  # Instance has an undocumented ``DBName`` attribute, only the Cluster does
-  # not.
+  # Connect to the DB Cluster endpoint, not the Instance. The Instance has an
+  # undocumented ``DBName`` attribute, but the Cluster does not.
   wagtail:
     environment: 
-      DATABASE_URL: !Sub "postgres://wagtail:ChangeMe@${Database.Endpoint.Address}:${Database.Endpoint.Port}/${DatabaseInstance.DBName}"
+      DATABASE_URL: !Sub "postgres://wagtail:ChangeMe@${DBCluster.Endpoint.Address}:${DBCluster.Endpoint.Port}/${DBInstance.DBName}"
       AWS_STORAGE_BUCKET_NAME: !Ref S3Media # Bucket name, not DNS
     image:
-      name: wagtaillambda
+      name: ${self:service}
     url: true          # create a Lambda Function URL 
   wagtailjanitor:      # sets flag which start.sh uses to do maintenance
     environment: 
-      DATABASE_URL: !Sub "postgres://wagtail:ChangeMe@${Database.Endpoint.Address}:${Database.Endpoint.Port}/${DatabaseInstance.DBName}"
+      DATABASE_URL: !Sub "postgres://wagtail:ChangeMe@${DBCluster.Endpoint.Address}:${DBCluster.Endpoint.Port}/${DBInstance.DBName}"
       AWS_STORAGE_BUCKET_NAME: !Ref S3Media
       WAGTAIL_JANITOR: migrate, createsuperuser, collectstatic
     image:
-      name: wagtaillambda
+      name: ${self:service}
     timeout: 180  # migration, collectstatic > 30 sec, wake up DB 30-35
     url: false    # run from CLI or web console, not API
 
@@ -174,17 +172,15 @@ resources:
         SubnetIds:
           - !Ref PublicSubnet1
           - !Ref PublicSubnet2
-    Database:
+    DBCluster:
       Type: AWS::RDS::DBCluster
       Properties:
-        #DeletionPolicy: Snapshot  # keep, nuke, or snapshot
         Engine: aurora-postgresql
         EngineMode: provisioned  # Serverless v2 (v1 is deprecated)
-        
-        #EngineVersion: 16.4  # v2 on PG>16.1, AWS default 16.4
-        EngineVersion: 13.16  # 13.1 used for v1 on PG<16.1, AWS default 13.16
-        DatabaseName:        wagtaillambda3
-        DBClusterIdentifier: wagtaillambda3cluster
+        EngineVersion: 16.4  # v2 on PG>16.1, AWS default 16.4
+        #EngineVersion: 13.16  # 13.1 used for v1 on PG<16.1, AWS default 13.16
+        DatabaseName:        ${self:service}
+        DBClusterIdentifier: ${self:service}
         DBSubnetGroupName:   !Ref DBSubnetGroup
         MasterUsername:      wagtail
         MasterUserPassword:  ChangeMe
@@ -197,19 +193,17 @@ resources:
           SecondsUntilAutoPause: 300 # default is 300, requires MinCapacity=0
         VpcSecurityGroupIds:
           - !Ref SecurityGroupDb
-    DatabaseInstance: # required for v2
+    DBInstance: # required for v2
       Type: AWS::RDS::DBInstance
       Properties: 
         Engine: aurora-postgresql
         DBInstanceClass: db.serverless
-        DBClusterIdentifier: !Ref Database
+        DBClusterIdentifier: !Ref DBCluster
 
     S3Media:
       Type: AWS::S3::Bucket
-      # DeletionPolicy: Retain
-      # UpdateReplacePolicy: Retain
       Properties:
-        # BucketName generated like: wagtail-dev-s3media-12vbehqv6osgh
+        # BucketName generated like: wagtaillwa-dev-s3media-12vbehqv6osgh
         CorsConfiguration:
           CorsRules:
           - AllowedHeaders: ['*']

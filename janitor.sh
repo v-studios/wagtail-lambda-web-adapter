@@ -1,4 +1,5 @@
 #!/usr/bin/env bash -x
+# TODO all these hard wired values should be gotten from CloudFormation.
 
 export AWS_STORAGE_BUCKET_NAME=wagtail-dev-s3media-12vbehqv6osgh
 

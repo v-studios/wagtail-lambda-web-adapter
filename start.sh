@@ -17,8 +17,13 @@ else
     DJANGO_SUPERUSER_PASSWORD=KILLME ./manage.py createsuperuser --noinput --username chris --email chris@v-studios.com || echo "COULD NOT SET SUPERUSER, MAYBE ALREADY SET"
 
     echo "## ${0} Collect Static..."
-    # --clear flag throws error
-    ./manage.py collectstatic --noinput -v 3
+    # --clear flag throws error:
+    # File "/VENV/lib/python3.12/site-packages/botocore/validate.py", line 381, in serialize_to_request
+    # raise ParamValidationError(report=report.generate_report())
+    # botocore.exceptions.ParamValidationError: Parameter validation failed:
+    # Invalid length for parameter Key, value: 0, valid min length: 1
+
+    AWS_DEFAULT_ACL='public-read' ./manage.py collectstatic --noinput -v 1
     err=$?
     if [ $err -ne 0 ]
     then
