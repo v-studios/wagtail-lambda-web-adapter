@@ -1,0 +1,9 @@
+db/
+media/
+node_modules/
+Makefile
+package-lock.json
+package.json
+README.rst
+serverless.yml
+TODO.rst
