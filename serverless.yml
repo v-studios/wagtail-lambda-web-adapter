@@ -25,6 +25,7 @@ provider:
   iam:
     role:
       statements:
+        # See django-storages doc
         - Effect: Allow
           Action:
             - s3:ListBucket
@@ -33,9 +34,8 @@ provider:
             - s3:ListBucketVersions         # needed?
           Resource: 
             - !Sub ${S3Media.Arn}     # BUCKET
-            - !Sub ${S3Media.Arn}/*  # OBJECTS -- hopefully not needed
         - Effect: Allow
-          Action: # See django-storages doc
+          Action:
             - s3:DeleteObject
             - s3:GetObject
             - s3:GetObjectAcl
@@ -45,7 +45,6 @@ provider:
             - s3:AbortMultipartUpload     # needed?
           Resource:
             - !Sub ${S3Media.Arn}/* # OBJECTS
-            - !Sub ${S3Media.Arn}    # BUCKET -- hopefully not needed
   vpc:  # Put Lambda in the VPC with Aurora.
     securityGroupIds:
       - !Ref SecurityGroupLambda
@@ -54,6 +53,7 @@ provider:
       - !Ref PublicSubnet2
 
 functions:
+  # For Django-Storages, set its environment variables 
   s3check:
     environment: 
       AWS_STORAGE_BUCKET_NAME: !Ref S3Media # Bucket name, not DNS
@@ -63,6 +63,7 @@ functions:
   # undocumented ``DBName`` attribute, but the Cluster does not.
   wagtail:
     environment: 
+      KILL_ME: "TEST FUCNTION DEPLOYMENT"
       DATABASE_URL: !Sub "postgres://wagtail:ChangeMe@${DBCluster.Endpoint.Address}:${DBCluster.Endpoint.Port}/${DBInstance.DBName}"
       AWS_STORAGE_BUCKET_NAME: !Ref S3Media # Bucket name, not DNS
     image:

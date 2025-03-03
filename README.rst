@@ -49,29 +49,60 @@ Then we can build and deploy and update with::
 
   npx sls deploy
 
-It first builds the Docker image and uploads it to ECR, creating a new ECR Repository if needed. It then builds all the networking infrastructure, then the Database Cluster and Instance, and finally the Lambdas that reference it.  The first run takes a long time, almost 10 minutes, due to the DB. 
+It first builds the Docker image and uploads it to ECR, creating a new ECR
+Repository if needed. It then builds all the networking infrastructure, then the
+Database Cluster and Instance, and finally the Lambdas that reference it.  The
+first run takes a long time, almost 10 minutes, due to the DB. Subsequent
+deploys take about 48 seconds (yeah, too long, but see `TODO.rst`_)
 
 
 wagtailjanitor for initial setup, migration
 ===========================================
 
-Use function ``wagtailjanitor`` uses the same image as the plain ``wagtail`` function, but sets a variable that ``start.sh`` script uses to setup the initial data. There's no Function URL so just do it HOW from the console.
+Use function ``wagtailjanitor`` uses the same image as the plain ``wagtail``
+function, but sets a variable that ``start.sh`` script uses to setup the initial
+data. There's no Function URL so just do it HOW from the console.
 
-It first runs ./s3check.py to verify access to S3. Then it runs ``migrate`` to setup the DB schema. Then it creates an admin with a password. Finally it runs ``collectstatic`` to gather the static files. It has a longer timeout than the main service, since migrations can take a while.
+It first runs ./s3check.py to verify access to S3. Then it runs ``migrate`` to
+setup the DB schema. Then it creates an admin with a password. Finally it runs
+``collectstatic`` to gather the static files. It has a longer timeout than the
+main service, since migrations can take a while.
 
-For safety's sake, there's no Function URL like on the main service. Instead, go to the Lambda console and hit the test button. You can also run it from the CLI::
+For safety's sake, there's no Function URL like on the main service. Instead, go
+to the Lambda console and hit the test button. You can also run it from the
+CLI::
 
   npx sls invoke --function wagtailjanitor
 
 Check wagtail itself
 ====================
 
-After the initial setup, you should have a running wagtail. The Serverless deploy output shows the function URL, plug it into a browser; you can also see it in the AWS Console for the Lambda.
+After the initial setup, you should have a running wagtail. The Serverless
+deploy output shows the function URL, plug it into a browser; you can also see
+it in the AWS Console for the Lambda.
 
-TODO: how to update the Wagtail site
-====================================
 
-Without ``sls deploy`` for the entire stack. Makefile?
+Update the Wagtail site code
+============================
+
+You can deploy changes that ONLY affect the lambda like::
+  
+  npx sls deploy --function wagtail  
+
+This takes about 17 seconds.
+
+This will NOT update the function's *configuration*, e.g., environment variables. You'll need the full deploy for that.
+
+
+Issues
+======
+
+After running ``wagtailjanitor``, opening the wagtail app isn't getting styled. The janitor does the ``collectstatic`` which populates the S3 with non-public assets. During use of the webapp, Django-Storages calculates S3 Pre-Signed URLs which allow limited time viewing -- but these were giving me access denied or failed checksum errors.  I found adding the AWS region to the settings file fixed it::
+
+  "region_name": "eu-west-3", 
+
+OK, I take it back: I've removed that from ``staticfiles`` and it still works. Why didn't it work, and why does it work now? 
+
 
 Flame
 =====
