@@ -37,6 +37,7 @@ if bucket_name:
                 # Default behavior uses non-public objects with Presigned URLs.
                 #"default_acl": "public-read",
                 #"querystring_auth": False,
+                "region_name": "eu-west-3",
             },
         },
         "staticfiles": {
@@ -45,6 +46,8 @@ if bucket_name:
                 "bucket_name": bucket_name,
                 #"default_acl": "public-read",
                 #"querystring_auth": False,
+                "region_name": "eu-west-3",
+
             },
     },
 }

@@ -23,7 +23,7 @@ else
     # botocore.exceptions.ParamValidationError: Parameter validation failed:
     # Invalid length for parameter Key, value: 0, valid min length: 1
 
-    AWS_DEFAULT_ACL='public-read' ./manage.py collectstatic --noinput -v 1
+    ./manage.py collectstatic --noinput -v 1
     err=$?
     if [ $err -ne 0 ]
     then

@@ -31,9 +31,11 @@ provider:
             - s3:GetBucketLocation
             - s3:ListBucketMultipartUploads # needed?
             - s3:ListBucketVersions         # needed?
-          Resource: !Sub ${S3Media.Arn}     # BUCKET
+          Resource: 
+            - !Sub ${S3Media.Arn}     # BUCKET
+            - !Sub ${S3Media.Arn}/*  # OBJECTS -- hopefully not needed
         - Effect: Allow
-          Action:
+          Action: # See django-storages doc
             - s3:DeleteObject
             - s3:GetObject
             - s3:GetObjectAcl
@@ -41,7 +43,9 @@ provider:
             - s3:PutObjectAcl
             - s3:ListMultipartUploadParts # needed?
             - s3:AbortMultipartUpload     # needed?
-          Resource: !Sub ${S3Media.Arn}/* # OBJECTS
+          Resource:
+            - !Sub ${S3Media.Arn}/* # OBJECTS
+            - !Sub ${S3Media.Arn}    # BUCKET -- hopefully not needed
   vpc:  # Put Lambda in the VPC with Aurora.
     securityGroupIds:
       - !Ref SecurityGroupLambda
