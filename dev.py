@@ -45,7 +45,9 @@ CSRF_TRUSTED_ORIGINS=[
 bucket_name = os.environ.get("AWS_STORAGE_BUCKET_NAME")
 if bucket_name:
     print(f"#### DEV.PY STORAGES configuring STORAGES for S3 {bucket_name=}")
-    INSTALLED_APPS.append("storages")
+    # This was needed before WT-6, then not for WT-6, but for NewsSite it is.
+    if "storages" not in INSTALLED_APPS:
+        INSTALLED_APPS.append("storages")
     STORAGES = {
         "default": {
             "BACKEND": "storages.backends.s3.S3Storage",
@@ -63,6 +65,7 @@ if bucket_name:
     },
 }
 
+INSTALLED_APPS.append("django_extensions")  # for reset_db
 
 # Configure from DATABASE_URL:
 # * "sqlite:////tmp/db.sqlite3"

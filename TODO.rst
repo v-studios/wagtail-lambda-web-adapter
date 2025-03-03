@@ -12,3 +12,5 @@
   ``sls deploy`` takes 48 seconds without any infra changes. If we separate out
   the network, database, and other non-Lambba stuff, we should be able to make
   code deploys much faster. 
+
+* can I extend wagtailjanitor to accept arbitrary commands? I'd like to sometimes flush the DB or make migrations, etc, but not always. 
