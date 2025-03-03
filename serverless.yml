@@ -1,27 +1,39 @@
-# May want a Lambda that JUST does migrations, collectstatic, using same image
+service: wagtaillwa
 
-service: wagtail
+package:  # TODO package each function individually
+  exclude:
+    - 'node_modules/**'
+    - 'db/**'
+    - 'media/**'
+    - Dockerfile
+    - Makefile
+    - package-lock.json
+    - package.json
+    - README.rst
+    - TODO.rst
 
 provider:
   name: aws
   region: eu-west-3
   memorySize: 2048 # optional, in MB, default is 1024
-  timeout: 60 # migration and collectstatic > 30 seconds, wake up DB 30-35 seconds
+  timeout: 60
   ecr:
     images:
-      wagtaillambda:
+      wagtaillwa:
         path: ./
         platform: linux/amd64   # my Mac M1 builds ARM by default,
   iam:
     role:
       statements:
+        # See django-storages doc
         - Effect: Allow
           Action:
             - s3:ListBucket
             - s3:GetBucketLocation
             - s3:ListBucketMultipartUploads # needed?
             - s3:ListBucketVersions         # needed?
-          Resource: !Sub ${S3Media.Arn}     # BUCKET
+          Resource: 
+            - !Sub ${S3Media.Arn}     # BUCKET
         - Effect: Allow
           Action:
             - s3:DeleteObject
@@ -31,43 +43,41 @@ provider:
             - s3:PutObjectAcl
             - s3:ListMultipartUploadParts # needed?
             - s3:AbortMultipartUpload     # needed?
-          Resource: !Sub ${S3Media.Arn}/* # OBJECTS
-
-  # Put Lambda in the VPC with Aurora;
-  # TODO can we use a VPC Endpoint instead?
-  vpc:
+          Resource:
+            - !Sub ${S3Media.Arn}/* # OBJECTS
+  vpc:  # Put Lambda in the VPC with Aurora.
     securityGroupIds:
-      - !Ref SecurityGroupAppRunner
+      - !Ref SecurityGroupLambda
     subnetIds:
       - !Ref PublicSubnet1
       - !Ref PublicSubnet2
 
 functions:
+  # For Django-Storages, set its environment variables 
   s3check:
     environment: 
       AWS_STORAGE_BUCKET_NAME: !Ref S3Media # Bucket name, not DNS
-    handler:
-      s3check.handler
+    handler: s3check.handler
     runtime: python3.11
-    # TODO package individually
+  # Connect to the DB Cluster endpoint, not the Instance. The Instance has an
+  # undocumented ``DBName`` attribute, but the Cluster does not.
   wagtail:
     environment: 
-      # TODO make these vars parameters or refs to DB outputs
-      DATABASE_URL: !Sub "postgres://wagtail:ChangeMe@${Database.Endpoint.Address}:${Database.Endpoint.Port}/wagtaillambda"
-      # DATABASE_URL: sqlite:////tmp/wagtail-env.sqlite # Lambda: only /tmp is writable
+      KILL_ME: "TEST FUCNTION DEPLOYMENT"
+      DATABASE_URL: !Sub "postgres://wagtail:ChangeMe@${DBCluster.Endpoint.Address}:${DBCluster.Endpoint.Port}/${DBInstance.DBName}"
       AWS_STORAGE_BUCKET_NAME: !Ref S3Media # Bucket name, not DNS
     image:
-      name: wagtaillambda
-    url: true                   # create a Lambda Function URL 
-
-  wagtailjanitor:               # sets flag which start.sh uses to do maintenance
+      name: ${self:service}
+    url: true          # create a Lambda Function URL 
+  wagtailjanitor:      # sets flag which start.sh uses to do maintenance
     environment: 
-      DATABASE_URL: !Sub "postgres://wagtail:ChangeMe@${Database.Endpoint.Address}:${Database.Endpoint.Port}/wagtaillambda"
+      DATABASE_URL: !Sub "postgres://wagtail:ChangeMe@${DBCluster.Endpoint.Address}:${DBCluster.Endpoint.Port}/${DBInstance.DBName}"
       AWS_STORAGE_BUCKET_NAME: !Ref S3Media
       WAGTAIL_JANITOR: migrate, createsuperuser, collectstatic
     image:
-      name: wagtaillambda
-    url: false                   # run from CLI or web console, not API
+      name: ${self:service}
+    timeout: 180  # migration, collectstatic > 30 sec, wake up DB 30-35
+    url: false    # run from CLI or web console, not API
 
 # VPC, Aurora Serverless v1 DB, S3 Media 
 
@@ -137,22 +147,26 @@ resources:
       Properties:
         RouteTableId: !Ref PublicRouteTable
         SubnetId: !Ref PublicSubnet2
-    SecurityGroupAppRunner:
+    SecurityGroupLambda:
       Type: AWS::EC2::SecurityGroup
       Properties:
-        GroupName: !Sub "${AWS::StackName}-apprunner-sg"
-        GroupDescription: "Security group marking the apprunner instance"
+        GroupName: !Sub "${AWS::StackName}-lambda-sg"
+        GroupDescription: "Security group marking the lambda instance"
         VpcId: !Ref VPC
     SecurityGroupDb:
       Type: AWS::EC2::SecurityGroup
       Properties:
-        GroupName: !Sub "${AWS::StackName}-db-sg"
-        GroupDescription: "Security group on DB allowing apprunner access"
+        GroupName: !Sub "${AWS::StackName}-db-sg-2"
+        GroupDescription: "Security group on DB allowing lambda access"
         SecurityGroupIngress:
           - IpProtocol: tcp
-            SourceSecurityGroupId: !GetAtt SecurityGroupAppRunner.GroupId
-            FromPort: 5432
-            ToPort: 5432
+            SourceSecurityGroupId: !GetAtt SecurityGroupLambda.GroupId
+            FromPort: 5432 # postgres
+            ToPort:   5432
+          - IpProtocol: tcp
+            SourceSecurityGroupId: !GetAtt SecurityGroupLambda.GroupId
+            FromPort: 3306 # mysql
+            ToPort:   3306
         VpcId: !Ref VPC
 
     DBSubnetGroup:
@@ -163,31 +177,38 @@ resources:
         SubnetIds:
           - !Ref PublicSubnet1
           - !Ref PublicSubnet2
-    Database:
+    DBCluster:
       Type: AWS::RDS::DBCluster
       Properties:
         Engine: aurora-postgresql
-        EngineMode: serverless             # only use Serverless v1 at this time
-        EngineVersion: 13.9                # Django 4.1+ requires PSQL 12+; Serverless v1 only up to 13.9
-        DatabaseName:        wagtaillambda
-        DBClusterIdentifier: wagtaillambda
+        EngineMode: provisioned  # Serverless v2 (v1 is deprecated)
+        EngineVersion: 16.4  # v2 on PG>16.1, AWS default 16.4
+        #EngineVersion: 13.16  # 13.1 used for v1 on PG<16.1, AWS default 13.16
+        DatabaseName:        ${self:service}
+        DBClusterIdentifier: ${self:service}
         DBSubnetGroupName:   !Ref DBSubnetGroup
         MasterUsername:      wagtail
         MasterUserPassword:  ChangeMe
-        ScalingConfiguration:
-          AutoPause: true
+        # DANGER: Aurora Serverless v1 defaults to 3306 for MySQL, 5432 for PG.
+        # But for v2, it sets Postgres port to 3306, not 5432!
+        Port: 5432  # Aurora Serverless v2 default PG DB to 3306 (MySQL!)
+        ServerlessV2ScalingConfiguration:   # only for Serverless v2
           MaxCapacity: 4
-          MinCapacity: 2          # minimum for Serverless v1
-          SecondsUntilAutoPause: 300
+          MinCapacity: 0  # MinACU=0 allows v2 to be paused when inactive
+          SecondsUntilAutoPause: 300 # default is 300, requires MinCapacity=0
         VpcSecurityGroupIds:
           - !Ref SecurityGroupDb
+    DBInstance: # required for v2
+      Type: AWS::RDS::DBInstance
+      Properties: 
+        Engine: aurora-postgresql
+        DBInstanceClass: db.serverless
+        DBClusterIdentifier: !Ref DBCluster
 
     S3Media:
       Type: AWS::S3::Bucket
-      # DeletionPolicy: Retain
-      # UpdateReplacePolicy: Retain
       Properties:
-        # BucketName generated like: wagtail-dev-s3media-12vbehqv6osgh
+        # BucketName generated like: wagtaillwa-dev-s3media-12vbehqv6osgh
         CorsConfiguration:
           CorsRules:
           - AllowedHeaders: ['*']

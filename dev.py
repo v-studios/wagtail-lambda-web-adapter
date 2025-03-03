@@ -22,30 +22,43 @@ CSRF_TRUSTED_ORIGINS=[
 
 ]
 
-print(f"#### DEV.py {MEDIA_ROOT=} {STATIC_ROOT=}")
-# MEDIA_ROOT='/app/media' STATIC_ROOT='/app/static'
-# TODO put media and static under separate prefixes, how?
+# TODO: we want media and static to live under different roots but this isn't
+# doing it, static lives at top-level like /admin/, /css/, /js/.
+# print(f"#### DEV.py {MEDIA_ROOT=} {STATIC_ROOT=}") # /app/media, /app/static
+
+# [print(i) for i in dict(os.environ).items()]  # Got region? bucket for djsto?
+
+# django-storages defaults to storing in S3 without public-read, and calculates
+# presigned URLs for access at page render time. I thought we had to supply the
+# region_name but it appears not. 
+#
+# Storages will use options (not env vars!) including:
+# * bucket_name / AWS_STORAGE_BUCKET_NAME (required)
+# * region_name / AWS_S3_REGION_NAME
+#
+# Our serverless.yml sets:
+# AWS_STORAGE_BUCKET_NAME='wagtaillwa-dev-s3media-r0fhnejxii1y'
+# and provides other Lambda environment vars we can use:
+# AWS_DEFAULT_REGION='eu-west-3'
+# AWS_REGION='eu-west-3'
+
 bucket_name = os.environ.get("AWS_STORAGE_BUCKET_NAME")
 if bucket_name:
     print(f"#### DEV.PY STORAGES configuring STORAGES for S3 {bucket_name=}")
-    INSTALLED_APPS.append("storages")  # media/ and static/ in S3
-    del STATICFILES_STORAGE            # conflicts with STORAGES
+    INSTALLED_APPS.append("storages")
     STORAGES = {
         "default": {
             "BACKEND": "storages.backends.s3.S3Storage",
             "OPTIONS": {
                 "bucket_name": bucket_name,
-                # Default behavior uses non-public objects with Presigned URLs.
-                #"default_acl": "public-read",
-                #"querystring_auth": False,
+                #"region_name": os.environ["AWS_REGION"]
             },
         },
         "staticfiles": {
             "BACKEND": "storages.backends.s3.S3Storage",
             "OPTIONS": {
                 "bucket_name": bucket_name,
-                #"default_acl": "public-read",
-                #"querystring_auth": False,
+                #"region_name": os.environ["AWS_REGION"]
             },
     },
 }

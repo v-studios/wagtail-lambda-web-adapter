@@ -2,18 +2,13 @@
  TODO
 ======
 
-* Create prefix "/media/" and "/static/"
+* The Makefile isn't being used; it wants to be helpful for local development
+  and running, but we're not doing that.  I've added the ``run_wagtaillwa`` to
+  run the image built by Serverless and drop into a shell to poke around; you
+  can probably set environment vars to connect it to S3.
 
-* figure out why collectstatic -c is failing on the -c
-
-* See Dockerfile and polls/polls/settings.,py in
-  https://github.com/fun-with-serverless/serverless-django/
-  See settings for AWS POWER TOOLS logger
-  XXX settings for STATIC_URL, STATIC_ROOT, in fact no S3 at all
-
-* https://aws.amazon.com/blogs/containers/deploy-and-scale-django-applications-on-aws-app-runner/
-  use gunicorn
-  ALLOWD_HOSTS for AppRunner
-  STATIC_URL, STATIC_ROOT, STORAGES (with files)
-
-
+* Separate AWS infra from serverless code: The infrastructure changes very
+  little while the functions (wagtail app code) get updated  frequently. The
+  ``sls deploy`` takes 48 seconds without any infra changes. If we separate out
+  the network, database, and other non-Lambba stuff, we should be able to make
+  code deploys much faster. 

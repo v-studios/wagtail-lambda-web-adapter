@@ -1,13 +1,19 @@
+# Most of this is obsolete, for local developement; this bit here runs the
+# Serverless-built image with a shell.
+
+run:
+	docker run -it --rm serverless-wagtaillwa-dev:wagtaillwa bash
+
 # Create an ECR Repo (if it doesn't exist); build, tag, push the image.
-# Repo name must match that used by aws/apprunner.yml,
+# Repo name must match that used by the serverless.yml file.
 # our pattern is APP_NAME:OP_ENV (e.g., :dev, scale0:qa, scale0:prod)
 
-APP_NAME         := wagadapter
+APP_NAME         := wagtaillwa
 OP_ENV           ?= dev
 NAME_TAG         := ${APP_NAME}:${OP_ENV}
-IMAGE_LOCAL	 := ${NAME_TAG}
+IMAGE_LOCAL	     := ${NAME_TAG}
 AWS_REGION       := eu-west-3
-#AWS_ACCOUNT      := $(shell aws sts get-caller-identity --query Account --output text)
+AWS_ACCOUNT      := $(shell aws sts get-caller-identity --query Account --output text)
 ECR_REG          := ${AWS_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com
 ECR_REG_URL      := https://${ECR_REG}
 ECR_REG_REPO_TAG := ${ECR_REG}/${NAME_TAG}
@@ -16,7 +22,7 @@ DOCKER_OPTS      := docker run -it --rm \
 		    -p 8000:8000 \
 		    -v `pwd`/db:/app/db \
 		    -v `pwd`/media:/app/media \
-		    -e DATABASE_URL="sqlite:////app/db/scale0.sqlite" \
+		    -e DATABASE_URL="sqlite:////app/db/wagtaillwa.sqlite" \
 		    --name ${APP_NAME}
 DOCKER_RUN       := ${DOCKER_OPTS} ${IMAGE_LOCAL}
 DOCKER_BASH      := ${DOCKER_RUN} bash
@@ -39,10 +45,10 @@ build: Dockerfile
 	docker build --platform linux/amd64 --progress=plain -t ${APP_NAME}:${OP_ENV} .
 	#docker build --platform linux/amd64 --progress=plain -t ${ECR_REG_REPO_TAG} .
 
-run:
+run_HIDE_ME:
 	$(DOCKER_RUN)
 
-bash:
+bash_:
 	$(DOCKER_BASH)
 
 s3_bash bash_s3:
