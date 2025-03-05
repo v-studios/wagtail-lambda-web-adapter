@@ -64,15 +64,32 @@ function, but sets a variable that ``start.sh`` script uses to setup the initial
 data. There's no Function URL so just do it HOW from the console.
 
 It first runs ./s3check.py to verify access to S3. Then it runs ``migrate`` to
-setup the DB schema. Then it creates an admin with a password. Finally it runs
-``collectstatic`` to gather the static files. It has a longer timeout than the
-main service, since migrations can take a while.
+setup the DB schema. Then it creates an admin with a password. Then it runs
+``collectstatic`` to gather the static files. Finally it runs ``createsuperuser``, which will be OK if it's already been created. It has a longer timeout than the main service, since migrations can take a while.
 
 For safety's sake, there's no Function URL like on the main service. Instead, go
 to the Lambda console and hit the test button. You can also run it from the
 CLI::
 
-  npx sls invoke --function wagtailjanitor
+  npx sls invoke --log --function wagtailjanitor
+
+TODO: talk about wiping and loading data with WAGTAIL_JANITOR="reset_db"...
+
+wagtailresetdb to wipe and reload the DB
+========================================
+
+Just like above, but this one first wipes the Postgres DB (in case it's gotten corrupted by upgrading from an incompatible version, just saying). Then it loads the initial data.  It then does the same ``migrate``, ``collectstatic``, and ``createsuperuser`` as above.
+
+  npx sls invoke --log --function --wagtailresetdb
+
+You should use this before you try and attach to the app for the first time, or after hosing your DB. 
+
+If you run it and see::
+
+  psycopg.errors.ObjectInUse: database "wagtaillwa" is being accessed by other users
+  DETAIL:  There are 2 other sessions using the database.
+
+it means another Wagtail instance still has a connection to the DB. You'll have to wait a while for them to timeout, then try again.
 
 Check wagtail itself
 ====================
