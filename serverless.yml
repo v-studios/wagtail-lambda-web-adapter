@@ -203,7 +203,7 @@ resources:
         # But for v2, it sets Postgres port to 3306, not 5432!
         Port: 5432  # Aurora Serverless v2 default PG DB to 3306 (MySQL!)
         ServerlessV2ScalingConfiguration:   # only for Serverless v2
-          MaxCapacity: 4
+          MaxCapacity: 2  # will this be enough for Wagtail? 4 seemed fine
           MinCapacity: 0  # MinACU=0 allows v2 to be paused when inactive
           SecondsUntilAutoPause: 300 # default is 300, requires MinCapacity=0
         VpcSecurityGroupIds:
