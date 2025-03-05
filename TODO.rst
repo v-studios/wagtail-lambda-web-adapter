@@ -13,4 +13,13 @@
   the network, database, and other non-Lambba stuff, we should be able to make
   code deploys much faster. 
 
-* can I extend wagtailjanitor to accept arbitrary commands? I'd like to sometimes flush the DB or make migrations, etc, but not always. 
+* can I extend wagtailjanitor to accept arbitrary commands? I'd like to
+  sometimes flush the DB or make migrations, etc, but not always. Can I pass ENV
+  var to sls invoke, like ``sls invoke -f wagtailjanitor -e "COMMAND=flush"``?
+  NO, but I can pass --data which is an event...
+
+* Can my ``start.sh`` get invoke-time parameters from the ``--data`` option? I'd
+  like to pass a list of commands to run under ``./manage.py``, like
+  ``migrate``, ``collectstatic`` etc. That way I wouldn't need separate
+  functions for each, like I have now for ``wagtailjanitor`` and
+  ``wagtailresetdb``.

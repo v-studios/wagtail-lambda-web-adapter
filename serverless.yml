@@ -63,7 +63,6 @@ functions:
   # undocumented ``DBName`` attribute, but the Cluster does not.
   wagtail:
     environment: 
-      KILL_ME: "TEST FUCNTION DEPLOYMENT"
       DATABASE_URL: !Sub "postgres://wagtail:ChangeMe@${DBCluster.Endpoint.Address}:${DBCluster.Endpoint.Port}/${DBInstance.DBName}"
       AWS_STORAGE_BUCKET_NAME: !Ref S3Media # Bucket name, not DNS
     image:
@@ -73,11 +72,22 @@ functions:
     environment: 
       DATABASE_URL: !Sub "postgres://wagtail:ChangeMe@${DBCluster.Endpoint.Address}:${DBCluster.Endpoint.Port}/${DBInstance.DBName}"
       AWS_STORAGE_BUCKET_NAME: !Ref S3Media
-      WAGTAIL_JANITOR: migrate, createsuperuser, collectstatic
+      # It always does createsuperuser, migrate, collectstatic
+      WAGTAIL_JANITOR: s3check
     image:
       name: ${self:service}
     timeout: 180  # migration, collectstatic > 30 sec, wake up DB 30-35
     url: false    # run from CLI or web console, not API
+  wagtailresetdb:
+    environment:
+      DATABASE_URL: !Sub "postgres://wagtail:ChangeMe@${DBCluster.Endpoint.Address}:${DBCluster.Endpoint.Port}/${DBInstance.DBName}"
+      AWS_STORAGE_BUCKET_NAME: !Ref S3Media
+      WAGTAIL_JANITOR: s3check reset_db load_data
+    image:
+      name: ${self:service}
+    timeout: 180  # migration, collectstatic > 30 sec, wake up DB 30-35
+    url: false    # run from CLI or web console, not API
+
 
 # VPC, Aurora Serverless v1 DB, S3 Media 
 
