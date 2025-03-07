@@ -63,9 +63,10 @@ Use function ``wagtailjanitor`` uses the same image as the plain ``wagtail``
 function, but sets a variable that ``start.sh`` script uses to setup the initial
 data. There's no Function URL so just do it HOW from the console.
 
-It first runs ./s3check.py to verify access to S3. Then it runs ``migrate`` to
-setup the DB schema. Then it creates an admin with a password. Then it runs
-``collectstatic`` to gather the static files. Finally it runs ``createsuperuser``, which will be OK if it's already been created. It has a longer timeout than the main service, since migrations can take a while.
+It first runs ./s3check.py to verify access to S3. Then it runs ``migrate`` to setup the DB schema.
+Then it creates an admin with a password. Then it runs ``collectstatic`` to gather the static files.
+Finally it runs ``createsuperuser``, which will be OK if it's already been created. It has a longer
+timeout than the main service, since migrations can take a while. 
 
 For safety's sake, there's no Function URL like on the main service. Instead, go
 to the Lambda console and hit the test button. You can also run it from the

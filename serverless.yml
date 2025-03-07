@@ -45,6 +45,7 @@ provider:
             - s3:AbortMultipartUpload     # needed?
           Resource:
             - !Sub ${S3Media.Arn}/* # OBJECTS
+  logRetentionInDays: 14
   vpc:  # Put Lambda in the VPC with Aurora.
     securityGroupIds:
       - !Ref SecurityGroupLambda
@@ -92,6 +93,12 @@ functions:
 # VPC, Aurora Serverless v1 DB, S3 Media 
 
 resources:
+  Description: >
+    Run Wagtail NewsSite "starter kit" serverlessly.
+    VPC contains Lambda running dockerized Wagtail (Django)
+    and scale-to-zero Aurora serverless v2 DB.
+    Uses an S3 bucket for static and media, 
+    with django-storages generating presigned URLs for access.
   Resources:
     VPC:
       Type: AWS::EC2::VPC
